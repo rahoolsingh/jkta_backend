@@ -1,7 +1,11 @@
+
 const User = require("../model/user");
 const axios = require("axios");
 const crypto = require("crypto");
 const dotenv = require("dotenv");
+const cloudinary = require("cloudinary").v2;
+const multer = require("multer");
+const fs = require("fs");
 
 dotenv.config();
 
@@ -9,91 +13,158 @@ const saltKey = process.env.SALT_KEY;
 const merchantId = process.env.MERCHANT_ID;
 const frontendURL = process.env.FRONTEND_URL;
 
-exports.register = (req, res, next) => {
-  const athleteName = req.body.athleteName;
-  const fatherName = req.body.fatherName;
-  const motherName = req.body.motherName;
-  const dob = req.body.dob;
-  const gender = req.body.gender;
-  const district = req.body.district;
-  const mob = req.body.mob;
-  const email = req.body.email;
-  const adharNumber = req.body.adharNumber;
-  const address = req.body.address;
-  const pin = req.body.pin;
-  const panNumber = req.body.panNumber;
-  const academyName = req.body.academyName;
-  const coachName = req.body.coachName;
-  User.create({
-    athleteName: athleteName,
-    fatherName: fatherName,
-    motherName: motherName,
-    dob: dob,
-    gender: gender,
-    district: district,
-    mob: mob,
-    email: email,
-    adharNumber: adharNumber,
-    address: address,
-    pin: pin,
-    panNumber: panNumber,
-    academyName: academyName,
-    coachName: coachName,
-  })
-    .then(async (data1) => {
-      
-        try {
-          
-          const data = {
-            merchantId,
-            merchantTransactionId: data1._id,
-            name:data1.athleteName,
-            amount: 69 * 100, // Convert to smallest currency unit
-            redirectUrl: `${frontendURL}/status?id=${data1._id}`,
-            redirectMode: "POST",
-            mobileNumber: data1.mob,
-            paymentInstrument: {
-              type: "PAY_PAGE",
-            },
-          };
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-          const payload = JSON.stringify(data);
-          const payloadMain = Buffer.from(payload).toString("base64");
-          const keyIndex = 1;
-          const stringToHash = `${payloadMain}/pg/v1/pay${saltKey}`;
-          const sha256 = crypto
-            .createHash("sha256")
-            .update(stringToHash)
-            .digest("hex");
-          const checksum = `${sha256}###${keyIndex}`;
+// Configure Multer to handle file uploads
+const upload = multer({ dest: "uploads/" }); // Temporary folder to store files before uploading to Cloudinary
 
-          const prodURL =
-            "https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay";
+// Function to handle file uploads with Multer
+const uploadFiles = (req, res) => {
+  return new Promise((resolve, reject) => {
+    const uploadSingle = upload.fields([
+      { name: "photo", maxCount: 1 },
+      { name: "certificate", maxCount: 1 },
+      { name: "residentCertificate", maxCount: 1 },
+      { name: "adharFrontPhoto", maxCount: 1 },
+      { name: "adharBackPhoto", maxCount: 1 },
+    ]);
 
-          const options = {
-            method: "POST",
-            url: prodURL,
-            headers: {
-              accept: "application/json",
-              "Content-Type": "application/json",
-              "X-VERIFY": checksum,
-            },
-            data: {
-              request: payloadMain,
-            },
-          };
+    uploadSingle(req, res, (err) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve(req.files);
+    });
+  });
+};
 
-          const response =  await axios(options);
-          console.log(response.data);
-          return res.json(response.data);
-        } catch (error) {
-          console.error("Error in /order:", error);
-          return res
-            .status(500)
-            .json({ error: "An error occurred while processing the order." });
-        }
-    }).then((res1)=>{
-      console.log(res1);
-    })
-    .catch((err) => console.log(err));
+// Function to upload files to Cloudinary
+const uploadToCloudinary = async (filePath, folder) => {
+  try {
+    const result = await cloudinary.uploader.upload(filePath, {
+      folder: folder,
+    });
+    return result.secure_url; // Return the URL of the uploaded file
+  } catch (error) {
+    console.error("Error uploading to Cloudinary:", error);
+    throw error;
+  }
+};
+
+exports.register = async (req, res, next) => {
+  try {
+    const files = await uploadFiles(req, res);
+
+    const {
+      athleteName,
+      fatherName,
+      motherName,
+      dob,
+      gender,
+      district,
+      mob,
+      email,
+      adharNumber,
+      address,
+      pin,
+      panNumber,
+      academyName,
+      coachName,
+    } = req.body;
+
+    // Initialize file URLs to be stored in the database
+    let photoUrl, certificateUrl, residentCertificateUrl, adharFrontPhotoUrl, adharBackPhotoUrl;
+
+    // Upload each file to Cloudinary and get the URL
+    if (files.photo) {
+      photoUrl = await uploadToCloudinary(files.photo[0].path, 'uploads');
+      fs.unlinkSync(files.photo[0].path); // Delete the file after uploading
+    }
+    if (files.certificate) {
+      certificateUrl = await uploadToCloudinary(files.certificate[0].path, 'uploads');
+      fs.unlinkSync(files.certificate[0].path); // Delete the file after uploading
+    }
+    if (files.residentCertificate) {
+      residentCertificateUrl = await uploadToCloudinary(files.residentCertificate[0].path, 'uploads');
+      fs.unlinkSync(files.residentCertificate[0].path); // Delete the file after uploading
+    }
+    if (files.adharFrontPhoto) {
+      adharFrontPhotoUrl = await uploadToCloudinary(files.adharFrontPhoto[0].path, 'uploads');
+      fs.unlinkSync(files.adharFrontPhoto[0].path); // Delete the file after uploading
+    }
+    if (files.adharBackPhoto) {
+      adharBackPhotoUrl = await uploadToCloudinary(files.adharBackPhoto[0].path, 'uploads');
+      fs.unlinkSync(files.adharBackPhoto[0].path); // Delete the file after uploading
+    }
+
+    // Create a new user record
+    const newUser = await User.create({
+      athleteName,
+      fatherName,
+      motherName,
+      dob,
+      gender,
+      district,
+      mob,
+      email,
+      adharNumber,
+      address,
+      pin,
+      panNumber,
+      academyName,
+      coachName,
+      photo: photoUrl,
+      certificate: certificateUrl,
+      residentCertificate: residentCertificateUrl,
+      adharFrontPhoto: adharFrontPhotoUrl,
+      adharBackPhoto: adharBackPhotoUrl,
+    });
+
+    // Prepare data for payment request
+    const data = {
+      merchantId,
+      merchantTransactionId: newUser._id,
+      name: newUser.athleteName,
+      amount: 69 * 100, // Convert to smallest currency unit
+      redirectUrl: `${frontendURL}/status?id=${newUser._id}`,
+      redirectMode: "POST",
+      mobileNumber: newUser.mob,
+      paymentInstrument: {
+        type: "PAY_PAGE",
+      },
+    };
+
+    const payload = JSON.stringify(data);
+    const payloadMain = Buffer.from(payload).toString("base64");
+    const keyIndex = 1;
+    const stringToHash = `${payloadMain}/pg/v1/pay${saltKey}`;
+    const sha256 = crypto.createHash("sha256").update(stringToHash).digest("hex");
+    const checksum = `${sha256}###${keyIndex}`;
+
+    const prodURL = "https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay";
+
+    const options = {
+      method: "POST",
+      url: prodURL,
+      headers: {
+        accept: "application/json",
+        "Content-Type": "application/json",
+        "X-VERIFY": checksum,
+      },
+      data: {
+        request: payloadMain,
+      },
+    };
+
+    // Send payment request
+    const response = await axios(options);
+    res.json(response.data);
+  } catch (error) {
+    console.error("Error in register function:", error);
+    res.status(500).json({ error: "An error occurred while registering the user." });
+  }
 };

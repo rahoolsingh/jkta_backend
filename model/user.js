@@ -16,6 +16,11 @@ const userSchema=new Schema({
     panNumber: String,
     academyName: String,
     coachName: String,
+    photo:String,
+    certificate: String,
+    residentCertificate: String,
+    adharFrontPhoto: String,
+    adharBackPhoto: String
 });
 
 module.exports=mongoose.model("Athlete",userSchema);
