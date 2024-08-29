@@ -14,6 +14,7 @@ const userSchema=new Schema({
     pin: String,
     panNumber: String,
     photo: String,
+    active:Boolean
 });
 
 module.exports=mongoose.model("Coach",userSchema);

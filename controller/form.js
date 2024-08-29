@@ -1,4 +1,3 @@
-
 const User = require("../model/user");
 const axios = require("axios");
 const crypto = require("crypto");
@@ -77,27 +76,43 @@ exports.register = async (req, res, next) => {
     } = req.body;
 
     // Initialize file URLs to be stored in the database
-    let photoUrl, certificateUrl, residentCertificateUrl, adharFrontPhotoUrl, adharBackPhotoUrl;
+    let photoUrl,
+      certificateUrl,
+      residentCertificateUrl,
+      adharFrontPhotoUrl,
+      adharBackPhotoUrl;
 
     // Upload each file to Cloudinary and get the URL
     if (files.photo) {
-      photoUrl = await uploadToCloudinary(files.photo[0].path, 'uploads');
+      photoUrl = await uploadToCloudinary(files.photo[0].path, "uploads");
       fs.unlinkSync(files.photo[0].path); // Delete the file after uploading
     }
     if (files.certificate) {
-      certificateUrl = await uploadToCloudinary(files.certificate[0].path, 'uploads');
+      certificateUrl = await uploadToCloudinary(
+        files.certificate[0].path,
+        "uploads"
+      );
       fs.unlinkSync(files.certificate[0].path); // Delete the file after uploading
     }
     if (files.residentCertificate) {
-      residentCertificateUrl = await uploadToCloudinary(files.residentCertificate[0].path, 'uploads');
+      residentCertificateUrl = await uploadToCloudinary(
+        files.residentCertificate[0].path,
+        "uploads"
+      );
       fs.unlinkSync(files.residentCertificate[0].path); // Delete the file after uploading
     }
     if (files.adharFrontPhoto) {
-      adharFrontPhotoUrl = await uploadToCloudinary(files.adharFrontPhoto[0].path, 'uploads');
+      adharFrontPhotoUrl = await uploadToCloudinary(
+        files.adharFrontPhoto[0].path,
+        "uploads"
+      );
       fs.unlinkSync(files.adharFrontPhoto[0].path); // Delete the file after uploading
     }
     if (files.adharBackPhoto) {
-      adharBackPhotoUrl = await uploadToCloudinary(files.adharBackPhoto[0].path, 'uploads');
+      adharBackPhotoUrl = await uploadToCloudinary(
+        files.adharBackPhoto[0].path,
+        "uploads"
+      );
       fs.unlinkSync(files.adharBackPhoto[0].path); // Delete the file after uploading
     }
 
@@ -117,6 +132,7 @@ exports.register = async (req, res, next) => {
       panNumber,
       academyName,
       coachName,
+      active: false,
       photo: photoUrl,
       certificate: certificateUrl,
       residentCertificate: residentCertificateUrl,
@@ -142,10 +158,13 @@ exports.register = async (req, res, next) => {
     const payloadMain = Buffer.from(payload).toString("base64");
     const keyIndex = 1;
     const stringToHash = `${payloadMain}/pg/v1/pay${saltKey}`;
-    const sha256 = crypto.createHash("sha256").update(stringToHash).digest("hex");
+    const sha256 = crypto
+      .createHash("sha256")
+      .update(stringToHash)
+      .digest("hex");
     const checksum = `${sha256}###${keyIndex}`;
 
-    const prodURL = "https://api-preprod.phonepe.com/apis/pg-sandbox/pg/v1/pay";
+    const prodURL = `${process.env.PROD_URL}/pg/v1/pay`;
 
     const options = {
       method: "POST",
@@ -165,6 +184,44 @@ exports.register = async (req, res, next) => {
     res.json(response.data);
   } catch (error) {
     console.error("Error in register function:", error);
-    res.status(500).json({ error: "An error occurred while registering the user." });
+    res
+      .status(500)
+      .json({ error: "An error occurred while registering the user." });
+  }
+};
+
+exports.checkStatus = async (req, res) => {
+  const transactionId = req.query.id;
+  try {
+    const keyIndex = 1;
+    const stringToHash = `/pg/v1/status/${merchantId}/${transactionId}${saltKey}`;
+    const sha256 = crypto
+      .createHash("sha256")
+      .update(stringToHash)
+      .digest("hex");
+    const checksum = `${sha256}###${keyIndex}`;
+
+    const options = {
+      method: "GET",
+      url: `${process.env.PROD_URL}/pg/v1/status/${merchantId}/${transactionId}`,
+      headers: {
+        accept: "application/json",
+        "Content-Type": "application/json",
+        "X-VERIFY": checksum,
+        "X-MERCHANT-ID": merchantId,
+      },
+    };
+
+    const response = await axios(options);
+    if (response.data.success) {
+      User.findByIdAndUpdate(transactionId, { active: true });
+    }
+
+    return res.json(response.data);
+  } catch (error) {
+    console.error("Error in /status:", error);
+    return res.status(500).json({
+      error: "An error occurred while checking the payment status.",
+    });
   }
 };
