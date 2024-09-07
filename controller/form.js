@@ -5,6 +5,7 @@ const dotenv = require("dotenv");
 const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
 const fs = require("fs");
+const Razorpay = require("razorpay");
 
 dotenv.config();
 
@@ -12,16 +13,23 @@ const saltKey = process.env.SALT_KEY;
 const merchantId = process.env.MERCHANT_ID;
 const frontendURL = process.env.FRONTEND_URL;
 
+// Initialize Razorpay instance using environment variables
+const razorpayInstance = new Razorpay({
+  key_id: process.env.key_id, // Use environment variables
+  key_secret: process.env.key_secret,
+});
+
+// Configure Cloudinary
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Configure Multer to handle file uploads
-const upload = multer({ dest: "uploads/" }); // Temporary folder to store files before uploading to Cloudinary
+// Configure Multer for file uploads
+const upload = multer({ dest: "uploads/" });
 
-// Function to handle file uploads with Multer
+// Function to handle file uploads
 const uploadFiles = (req, res) => {
   return new Promise((resolve, reject) => {
     const uploadSingle = upload.fields([
@@ -54,8 +62,10 @@ const uploadToCloudinary = async (filePath, folder) => {
   }
 };
 
+// Register function
 exports.register = async (req, res, next) => {
   try {
+    // Upload files using Multer
     const files = await uploadFiles(req, res);
 
     const {
@@ -75,48 +85,48 @@ exports.register = async (req, res, next) => {
       coachName,
     } = req.body;
 
-    // Initialize file URLs to be stored in the database
+    // Initialize file URLs
     let photoUrl,
       certificateUrl,
       residentCertificateUrl,
       adharFrontPhotoUrl,
       adharBackPhotoUrl;
 
-    // Upload each file to Cloudinary and get the URL
+    // Upload each file to Cloudinary
     if (files.photo) {
       photoUrl = await uploadToCloudinary(files.photo[0].path, "uploads");
-      fs.unlinkSync(files.photo[0].path); // Delete the file after uploading
+      fs.unlinkSync(files.photo[0].path); // Remove file after upload
     }
     if (files.certificate) {
       certificateUrl = await uploadToCloudinary(
         files.certificate[0].path,
         "uploads"
       );
-      fs.unlinkSync(files.certificate[0].path); // Delete the file after uploading
+      fs.unlinkSync(files.certificate[0].path);
     }
     if (files.residentCertificate) {
       residentCertificateUrl = await uploadToCloudinary(
         files.residentCertificate[0].path,
         "uploads"
       );
-      fs.unlinkSync(files.residentCertificate[0].path); // Delete the file after uploading
+      fs.unlinkSync(files.residentCertificate[0].path);
     }
     if (files.adharFrontPhoto) {
       adharFrontPhotoUrl = await uploadToCloudinary(
         files.adharFrontPhoto[0].path,
         "uploads"
       );
-      fs.unlinkSync(files.adharFrontPhoto[0].path); // Delete the file after uploading
+      fs.unlinkSync(files.adharFrontPhoto[0].path);
     }
     if (files.adharBackPhoto) {
       adharBackPhotoUrl = await uploadToCloudinary(
         files.adharBackPhoto[0].path,
         "uploads"
       );
-      fs.unlinkSync(files.adharBackPhoto[0].path); // Delete the file after uploading
+      fs.unlinkSync(files.adharBackPhoto[0].path);
     }
 
-    // Create a new user record
+    // Create a new user in the database
     const newUser = await User.create({
       athleteName,
       fatherName,
@@ -140,48 +150,25 @@ exports.register = async (req, res, next) => {
       adharBackPhoto: adharBackPhotoUrl,
     });
 
-    // Prepare data for payment request
-    const data = {
-      merchantId,
-      merchantTransactionId: newUser._id,
-      name: newUser.athleteName,
-      amount: 69 * 100, // Convert to smallest currency unit
-      redirectUrl: `${frontendURL}/status?id=${newUser._id}`,
-      redirectMode: "POST",
-      mobileNumber: newUser.mob,
-      paymentInstrument: {
-        type: "PAY_PAGE",
-      },
+    // Prepare Razorpay order options
+    const orderOptions = {
+      amount: 6900, // amount in paise (69 * 100 = 6900 paise = ₹69)
+      currency: "INR",
+      receipt: `order_rcptid_${newUser._id}`,
+      payment_capture: 1, // Auto capture payment
     };
 
-    const payload = JSON.stringify(data);
-    const payloadMain = Buffer.from(payload).toString("base64");
-    const keyIndex = 1;
-    const stringToHash = `${payloadMain}/pg/v1/pay${saltKey}`;
-    const sha256 = crypto
-      .createHash("sha256")
-      .update(stringToHash)
-      .digest("hex");
-    const checksum = `${sha256}###${keyIndex}`;
+    // Create Razorpay order
+    const order = await razorpayInstance.orders.create(orderOptions);
 
-    const prodURL = `${process.env.PROD_URL}/pg/v1/pay`;
-
-    const options = {
-      method: "POST",
-      url: prodURL,
-      headers: {
-        accept: "application/json",
-        "Content-Type": "application/json",
-        "X-VERIFY": checksum,
-      },
-      data: {
-        request: payloadMain,
-      },
-    };
-
-    // Send payment request
-    const response = await axios(options);
-    res.json(response.data);
+    // Send order details to the client for further processing
+    res.status(200).json({
+      success: true,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      userId: newUser._id,
+    });
   } catch (error) {
     console.error("Error in register function:", error);
     res
@@ -190,38 +177,27 @@ exports.register = async (req, res, next) => {
   }
 };
 
-exports.checkStatus = async (req, res) => {
-  const transactionId = req.query.id;
+// Function to verify payment
+exports.verifyPayment = (req, res) => {
   try {
-    const keyIndex = 1;
-    const stringToHash = `/pg/v1/status/${merchantId}/${transactionId}${saltKey}`;
-    const sha256 = crypto
-      .createHash("sha256")
-      .update(stringToHash)
-      .digest("hex");
-    const checksum = `${sha256}###${keyIndex}`;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
-    const options = {
-      method: "GET",
-      url: `${process.env.PROD_URL}/pg/v1/status/${merchantId}/${transactionId}`,
-      headers: {
-        accept: "application/json",
-        "Content-Type": "application/json",
-        "X-VERIFY": checksum,
-        "X-MERCHANT-ID": merchantId,
-      },
-    };
+    // Generate the expected signature
+    const generatedSignature = crypto
+      .createHmac('sha256', process.env.key_secret) // Use Razorpay key_secret
+      .update(razorpay_order_id + "|" + razorpay_payment_id) // Concatenate order_id and payment_id
+      .digest('hex');
 
-    const response = await axios(options);
-    if (response.data.success) {
-      User.findByIdAndUpdate(transactionId, { active: true });
+    // Compare the generated signature with the signature received from Razorpay
+    if (generatedSignature === razorpay_signature) {
+      // Payment verified successfully
+      res.status(200).json({ success: true, message: 'Payment verified successfully' });
+    } else {
+      // Payment verification failed
+      res.status(400).json({ success: false, message: 'Payment verification failed' });
     }
-
-    return res.json(response.data);
   } catch (error) {
-    console.error("Error in /status:", error);
-    return res.status(500).json({
-      error: "An error occurred while checking the payment status.",
-    });
+    console.error('Error in verifying payment:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 };
