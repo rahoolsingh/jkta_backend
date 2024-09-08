@@ -7,6 +7,8 @@ const multer = require("multer");
 const fs = require("fs");
 const Razorpay = require("razorpay");
 
+const mail=require("../mailController");
+
 dotenv.config();
 
 const saltKey = process.env.SALT_KEY;
@@ -178,26 +180,29 @@ exports.register = async (req, res, next) => {
 };
 
 // Function to verify payment
-exports.verifyPayment = (req, res) => {
+exports.verifyPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
+      req.body;
 
     // Generate the expected signature
     const generatedSignature = crypto
-      .createHmac('sha256', process.env.key_secret) // Use Razorpay key_secret
+      .createHmac("sha256", process.env.key_secret) // Use Razorpay key_secret
       .update(razorpay_order_id + "|" + razorpay_payment_id) // Concatenate order_id and payment_id
-      .digest('hex');
+      .digest("hex");
 
     // Compare the generated signature with the signature received from Razorpay
     if (generatedSignature === razorpay_signature) {
       // Payment verified successfully
-      res.status(200).json({ success: true, message: 'Payment verified successfully' });
+      mail()
     } else {
       // Payment verification failed
-      res.status(400).json({ success: false, message: 'Payment verification failed' });
+      res
+        .status(400)
+        .json({ success: false, message: "Payment verification failed" });
     }
   } catch (error) {
-    console.error('Error in verifying payment:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    console.error("Error in verifying payment:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
