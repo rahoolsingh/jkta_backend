@@ -1,8 +1,14 @@
 const express=require('express');
 const Router =express.Router()
 const UserControll=require("../controller/form");
-const FormController=require("../controller/pass");
+const CoachController=require("../controller/coachForm");
 Router.post('/register-user',UserControll.register);
-Router.get('/generatePass',FormController.passGenerator);
+
 Router.post('/verify-payment',UserControll.verifyPayment);
+
+Router.post('/register-coach',CoachController.register);
+
+Router.post('/verify-payment-coach',CoachController.verifyPayment);
+
+
 module.exports=Router;

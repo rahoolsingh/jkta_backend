@@ -1,7 +1,7 @@
 const mongoose=require("mongoose");
 const Schema=mongoose.Schema;
 
-const userSchema=new Schema({
+const coachSchema=new Schema({
     playerName: String,
     fatherName: String,
     dob: String,
@@ -14,7 +14,12 @@ const userSchema=new Schema({
     pin: String,
     panNumber: String,
     photo: String,
-    active:Boolean
+    active:Boolean,
+    blackBeltCertificate: String,
+    birthCertificate: String,
+    residentCertificate: String,
+   adharFrontPhoto: String,
+   adharBackPhoto: String,
 });
 
-module.exports=mongoose.model("Coach",userSchema);
+module.exports=mongoose.model("Coach",coachSchema);
