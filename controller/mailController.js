@@ -1,5 +1,8 @@
 const nodemailer=require("nodemailer")
 
+const dotenv=require("dotenv");
+dotenv.config()
+
 const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: process.env.SMTP_PORT,
@@ -9,7 +12,8 @@ const transporter = nodemailer.createTransport({
       pass: process.env.SMTP_PASSWORD,
     },
   });
-  const sendMail = (to, subject, text, html, attachments) => {
+ 
+const sendMail = (to, subject, text, html, attachments) => {
     const mailOptions = {
       from: process.env.SMTP_EMAIL,
       to,
@@ -32,7 +36,7 @@ const transporter = nodemailer.createTransport({
     });
   };
 
- exports.sendWithAttachment = async (
+ const sendWithAttachment = async (
     to,
     subject,
     text,
@@ -54,3 +58,5 @@ const transporter = nodemailer.createTransport({
       console.error("Failed to send email with attachment:", error);
     }
   };
+
+  module.exports={sendMail,sendWithAttachment}

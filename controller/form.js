@@ -6,8 +6,13 @@ const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
 const fs = require("fs");
 const Razorpay = require("razorpay");
-
-//const mail=require("../mailController");
+const path = require("path");
+const { generateCertificate, makeAvatar } = require("../controller/idcard");
+const {
+  sendMail,
+  sendWithAttachment,
+} = require("../controller/mailController");
+const { use } = require("../routes/user");
 
 dotenv.config();
 
@@ -64,6 +69,25 @@ const uploadToCloudinary = async (filePath, folder) => {
   }
 };
 
+const saveFileToRoot = async (filePath, filename) => {
+  const rootDir = path.join(__dirname, "..", filename); // Save in root directory
+  const readStream = fs.createReadStream(filePath);
+  const writeStream = fs.createWriteStream(rootDir);
+
+  return new Promise((resolve, reject) => {
+    readStream.pipe(writeStream);
+
+    writeStream.on("finish", () => {
+      console.log(`File saved to root as ${filename}`);
+      resolve(rootDir);
+    });
+
+    writeStream.on("error", (error) => {
+      reject(error);
+    });
+  });
+};
+
 // Register function
 exports.register = async (req, res, next) => {
   try {
@@ -96,6 +120,8 @@ exports.register = async (req, res, next) => {
 
     // Upload each file to Cloudinary
     if (files.photo) {
+      const fileName = `photo.png`;
+      await saveFileToRoot(files.photo[0].path, fileName);
       photoUrl = await uploadToCloudinary(files.photo[0].path, "uploads");
       fs.unlinkSync(files.photo[0].path); // Remove file after upload
     }
@@ -182,8 +208,12 @@ exports.register = async (req, res, next) => {
 // Function to verify payment
 exports.verifyPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-      req.body;
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      userId,
+    } = req.body;
 
     // Generate the expected signature
     const generatedSignature = crypto
@@ -193,7 +223,34 @@ exports.verifyPayment = async (req, res) => {
 
     // Compare the generated signature with the signature received from Razorpay
     if (generatedSignature === razorpay_signature) {
+      const userData = await User.findById(userId);
+      //console.log(userData)
       // Payment verified successfully
+
+      await makeAvatar().then(() => {
+        generateCertificate({
+          id: `${userData._id}`,
+          type: "A",
+          name: userData.athleteName,
+          parentage: userData.fatherName,
+          gender: userData.gender,
+          valid: "ToDo",
+          district: userData.district,
+          dob: `${userData.dob}`,
+        }).catch((err)=>{
+          console.log(err);
+        });
+      });
+
+      await sendWithAttachment(
+        userData.email,
+        "Here is your ID card from JKTA",
+        "Please find your id card attatched below",
+        "<p>Please find your id card attatched below</p>",
+        "Id-Card.pdf",
+        "./Id-Card.pdf"
+      );
+      res.status(201).json({ message: "Email Sent successfully" });
     } else {
       // Payment verification failed
       res
