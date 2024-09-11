@@ -1,8 +1,9 @@
-const mongoose=require("mongoose");
-const Schema=mongoose.Schema;
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
-const userSchema=new Schema({
-  athleteName: String,
+const userSchema = new Schema({
+    regNo: String,
+    athleteName: String,
     fatherName: String,
     motherName: String,
     dob: Date,
@@ -16,11 +17,15 @@ const userSchema=new Schema({
     panNumber: String,
     academyName: String,
     coachName: String,
-    photo:String,
+    photo: String,
     certificate: String,
     residentCertificate: String,
     adharFrontPhoto: String,
-    adharBackPhoto: String
+    adharBackPhoto: String,
+    payment: {
+        type: Boolean,
+        default: false,
+    },
 });
 
-module.exports=mongoose.model("Athlete",userSchema);
+module.exports = mongoose.model("Athlete", userSchema);

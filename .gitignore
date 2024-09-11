@@ -1,2 +1,7 @@
 /node_modules
 /.env
+/uploads
+/photo.png
+/avatar.png
+/download.png
+/Id-Card.pdf
