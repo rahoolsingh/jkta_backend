@@ -118,23 +118,23 @@ const generateCard = async ({
 
     // Add text fields
     doc.fontSize(22)
-        .font("Times-Bold")
+        .font("Helvetica-Bold")
         .fillColor("red")
-        .text(id.toUpperCase(), 243, 140);
+        .text(id.toUpperCase(), 243, 136);
 
     doc.fontSize(30)
         .font("Times-Bold")
         .fillColor("black")
-        .text(name.toUpperCase(), 420, 200);
+        .text(name.toUpperCase(), 420, 178);
 
     doc.fontSize(24)
         .font("Helvetica-Bold")
         .fillColor("black")
         .text(parentage.toUpperCase(), 580, 302)
-        .text(gender.toUpperCase(), 580, 344)
-        .text(formatDate(dob), 580, 386)
-        .text(district.toUpperCase(), 580, 428)
-        .text(valid.toUpperCase(), 580, 470);
+        .text(gender.toUpperCase(), 580, 365)
+        .text(formatDate(dob), 580, 407)
+        .text(district.toUpperCase(), 580, 449)
+        .text(valid.toUpperCase(), 580, 491);
 
     // Add the avatar image
     doc.image(avatarImagePath, 112, 218, { width: 220 });

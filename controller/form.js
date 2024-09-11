@@ -170,7 +170,6 @@ exports.register = async (req, res, next) => {
             panNumber,
             academyName,
             coachName,
-            active: false,
             photo: photoUrl,
             certificate: certificateUrl,
             residentCertificate: residentCertificateUrl,

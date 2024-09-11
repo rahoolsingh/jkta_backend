@@ -163,7 +163,6 @@ exports.register = async (req, res, next) => {
       address,
       pin,
       panNumber,
-      active: false,
       photo: photoUrl,
       blackBeltCertificate: blackBeltCertUrl,
       birthCertificate: birthCertUrl,

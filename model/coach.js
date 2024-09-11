@@ -1,7 +1,8 @@
-const mongoose=require("mongoose");
-const Schema=mongoose.Schema;
+const mongoose = require("mongoose");
+const Schema = mongoose.Schema;
 
-const coachSchema=new Schema({
+const coachSchema = new Schema({
+    regNo: String,
     playerName: String,
     fatherName: String,
     dob: String,
@@ -14,12 +15,15 @@ const coachSchema=new Schema({
     pin: String,
     panNumber: String,
     photo: String,
-    active:Boolean,
     blackBeltCertificate: String,
     birthCertificate: String,
     residentCertificate: String,
-   adharFrontPhoto: String,
-   adharBackPhoto: String,
+    adharFrontPhoto: String,
+    adharBackPhoto: String,
+    payment: {
+        type: Boolean,
+        default: false,
+    },
 });
 
-module.exports=mongoose.model("Coach",coachSchema);
+module.exports = mongoose.model("Coach", coachSchema);
