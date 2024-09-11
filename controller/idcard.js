@@ -23,16 +23,16 @@ const convertToPNG = async (inputPath, outputPath) => {
     console.log("Image converted to PNG successfully.");
 };
 
-const makeAvatar = () => {
+const makeAvatar = (id) => {
     return new Promise(async (resolve, reject) => {
         try {
-            const inputImage = path.resolve(__dirname, "../download.png");
-            const outputImage = path.resolve(__dirname, "../photo.png");
+            const inputImage = path.resolve(__dirname, `../${id}-download.png`);
+            const outputImage = path.resolve(__dirname, `../${id}-photo.png`);
 
             await convertToPNG(inputImage, outputImage);
 
-            const photoPath = path.resolve(__dirname, "../photo.png");
-            const avatarPath = path.resolve(__dirname, "../avatar.png");
+            const photoPath = path.resolve(__dirname, `../${id}-photo.png`);
+            const avatarPath = path.resolve(__dirname, `../${id}-avatar.png`);
 
             fs.createReadStream(photoPath)
                 .pipe(
@@ -94,10 +94,10 @@ const generateCard = async ({
         margin: 60,
     });
 
-    await makeAvatar();
+    await makeAvatar(id);
 
     // Stream the PDF to a file
-    const outputPath = path.resolve(__dirname, "../Id-Card.pdf");
+    const outputPath = path.resolve(__dirname, `../${id}-identity-card.pdf`);
     doc.pipe(fs.createWriteStream(outputPath));
 
     // Paths for background and avatar images
@@ -111,7 +111,7 @@ const generateCard = async ({
         backImagePath = path.resolve(__dirname, "../coach-back.png");
     }
 
-    const avatarImagePath = path.resolve(__dirname, "../avatar.png");
+    const avatarImagePath = path.resolve(__dirname, `../${id}-avatar.png`);
 
     // Add background image
     doc.image(frontImagePath, 0, 0, { width: 1011 });
@@ -150,4 +150,12 @@ const generateCard = async ({
     console.log("PDF created successfully");
 };
 
-module.exports = { generateCard };
+// delete files
+const deleteFiles = async (id) => {
+    await fs.unlinkSync(path.resolve(__dirname, `../${id}-download.png`));
+    await fs.unlinkSync(path.resolve(__dirname, `../${id}-photo.png`));
+    await fs.unlinkSync(path.resolve(__dirname, `../${id}-avatar.png`));
+    await fs.unlinkSync(path.resolve(__dirname, `../${id}-identity-card.pdf`));
+};
+
+module.exports = { generateCard, deleteFiles };

@@ -7,7 +7,7 @@ const multer = require("multer");
 const fs = require("fs");
 const Razorpay = require("razorpay");
 const path = require("path");
-const { generateCard } = require("../controller/idcard");
+const { generateCard, deleteFiles } = require("../controller/idcard");
 const {
     sendMail,
     sendWithAttachment,
@@ -118,9 +118,11 @@ exports.register = async (req, res, next) => {
             adharFrontPhotoUrl,
             adharBackPhotoUrl;
 
+            const regNo = `ATH${Date.now().toString()}`
+
         // Upload each file to Cloudinary
         if (files.photo) {
-            const fileName = `download.png`;
+            const fileName = `${regNo}-download.png`;
             await saveFileToRoot(files.photo[0].path, fileName);
             photoUrl = await uploadToCloudinary(files.photo[0].path, "uploads");
             fs.unlinkSync(files.photo[0].path); // Remove file after upload
@@ -156,6 +158,7 @@ exports.register = async (req, res, next) => {
 
         // Create a new user in the database
         const newUser = await User.create({
+            regNo,
             athleteName,
             fatherName,
             motherName,
@@ -227,7 +230,7 @@ exports.verifyPayment = async (req, res) => {
             // Payment verified successfully
 
             await generateCard({
-                id: `${userData._id}`,
+                id: userData.regNo,
                 type: "A",
                 name: userData.athleteName,
                 parentage: userData.fatherName,
@@ -242,9 +245,11 @@ exports.verifyPayment = async (req, res) => {
                 "Here is your ID card from JKTA",
                 "Please find your id card attatched below",
                 "<p>Please find your id card attatched below</p>",
-                "Id-Card.pdf",
-                "./Id-Card.pdf"
+                `${userData.regNo}-identity-card.pdf`,
+                `./${userData.regNo}-identity-card.pdf`
             );
+
+            await deleteFiles(userData.regNo);
             res.status(201).json({ message: "Email Sent successfully" });
         } else {
             // Payment verification failed
