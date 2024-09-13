@@ -10,7 +10,7 @@ const User=require("./routes/user")
 app.use(User);
 
 Mongoose.connect(
-    "mongodb+srv://veer001:XxHVM4Jg0iCP3HMY@cluster0.plav2.mongodb.net/jkta",
+    process.env.DB_URL
   ).then(() => {
     app.listen(3000);
     console.log("connect");

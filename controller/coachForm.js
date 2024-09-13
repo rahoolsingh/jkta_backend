@@ -105,7 +105,7 @@ exports.register = async (req, res, next) => {
       residentCertUrl,
       adharFrontUrl,
       adharBackUrl;
-
+    const regNo = `CH${Date.now().toString()}`;
     // Upload photo to Cloudinary
     if (files.photo) {
       const fileName = `photo.png`;
@@ -152,6 +152,7 @@ exports.register = async (req, res, next) => {
 
     // Create a new coach in the database with the new fields
     const newCoach = await Coach.create({
+      regNo,
       playerName,
       fatherName,
       dob,
@@ -173,7 +174,7 @@ exports.register = async (req, res, next) => {
 
     // Prepare Razorpay order options
     const orderOptions = {
-      amount: 6900, // amount in paise (69 * 100 = 6900 paise = ₹69)
+      amount: 50000,
       currency: "INR",
       receipt: `order_rcptid_${newCoach._id}`,
       payment_capture: 1, // Auto capture payment
@@ -217,18 +218,31 @@ exports.verifyPayment = async (req, res) => {
     if (generatedSignature === razorpay_signature) {
       // Payment verified successfully
 
-      const coachData = await Coach.findById(userId);
+      const userData = await Coach.findById(userId);
 
+      await Coach.findByIdAndUpdate(userData._id, { payment: true });
 
+      await generateCard({
+        id: userData.regNo,
+        type: "C",
+        name: userData.athleteName,
+        parentage: userData.fatherName,
+        gender: userData.gender,
+        valid: "ToDo",
+        district: userData.district,
+        dob: `${userData.dob}`,
+      });
 
       await sendWithAttachment(
-        coachData.email,
+        userData.email,
         "Here is your ID card from JKTA",
         "Please find your id card attatched below",
         "<p>Please find your id card attatched below</p>",
-        "test.txt",
-        "./test.txt"
+        `${userData.regNo}-identity-card.pdf`,
+        `./${userData.regNo}-identity-card.pdf`
       );
+      await deleteFiles(userData.regNo);
+
       res.status(201).json({ message: "Email Sent successfully" });
 
       console.log(coachData);
