@@ -6,8 +6,16 @@ const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
 const fs = require("fs");
 const Razorpay = require("razorpay");
+const path = require("path");
+const { generateCard, deleteFiles } = require("../controller/idcard");
+const {
+  sendMail,
+  sendWithAttachment,
+} = require("../controller/mailController");
+const { use } = require("../routes/user");
 
 dotenv.config();
+
 
 // Initialize Razorpay instance using environment variables
 const razorpayInstance = new Razorpay({
@@ -108,7 +116,7 @@ exports.register = async (req, res, next) => {
     const regNo = `CH${Date.now().toString()}`;
     // Upload photo to Cloudinary
     if (files.photo) {
-      const fileName = `photo.png`;
+      const fileName = `${regNo}-download.png`;
       await saveFileToRoot(files.photo[0].path, fileName);
 
       photoUrl = await uploadToCloudinary(files.photo[0].path, "uploads");
@@ -172,6 +180,7 @@ exports.register = async (req, res, next) => {
       adharBackPhoto: adharBackUrl,
     });
 
+    console.log(req.body)
     // Prepare Razorpay order options
     const orderOptions = {
       amount: 50000,
@@ -189,7 +198,7 @@ exports.register = async (req, res, next) => {
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      coachId: newCoach._id,
+      userId: newCoach._id,
     });
   } catch (error) {
     console.error("Error in register function:", error);
@@ -220,12 +229,14 @@ exports.verifyPayment = async (req, res) => {
 
       const userData = await Coach.findById(userId);
 
+      console.log(userData);
+
       await Coach.findByIdAndUpdate(userData._id, { payment: true });
 
       await generateCard({
         id: userData.regNo,
         type: "C",
-        name: userData.athleteName,
+        name: userData.playerName,
         parentage: userData.fatherName,
         gender: userData.gender,
         valid: "ToDo",
@@ -242,10 +253,7 @@ exports.verifyPayment = async (req, res) => {
         `./${userData.regNo}-identity-card.pdf`
       );
       await deleteFiles(userData.regNo);
-
       res.status(201).json({ message: "Email Sent successfully" });
-
-      console.log(coachData);
     } else {
       // Payment verification failed
       res
