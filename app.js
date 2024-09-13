@@ -3,7 +3,9 @@ const app = express();
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const Mongoose = require("mongoose");
-app.use(cors());
+app.use(cors({
+  origin:"*"
+}));
 app.use(bodyParser.json({ extended: false }));
 
 const User=require("./routes/user")
