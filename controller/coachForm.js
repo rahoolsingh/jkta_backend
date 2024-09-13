@@ -180,7 +180,7 @@ exports.register = async (req, res, next) => {
       adharBackPhoto: adharBackUrl,
     });
 
-    console.log(req.body)
+    
     // Prepare Razorpay order options
     const orderOptions = {
       amount: 50000,
@@ -191,6 +191,7 @@ exports.register = async (req, res, next) => {
 
     // Create Razorpay order
     const order = await razorpayInstance.orders.create(orderOptions);
+    console.log(order);
 
     // Send order details to the client for further processing
     res.status(200).json({
@@ -229,7 +230,7 @@ exports.verifyPayment = async (req, res) => {
 
       const userData = await Coach.findById(userId);
 
-      console.log(userData);
+     
 
       await Coach.findByIdAndUpdate(userData._id, { payment: true });
 
