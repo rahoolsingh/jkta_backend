@@ -16,5 +16,7 @@ Mongoose.connect(
   ).then(() => {
     app.listen(process.env.PORT || 3000);
     console.log(`Database connected & Server is running on port ${process.env.PORT || 3000}`);
-  });
-  
+  }).catch((err) => {
+    console.error("Error connecting to database:", err);
+  }
+  );

@@ -10,5 +10,11 @@ Router.post('/register-coach',CoachController.register);
 
 Router.post('/verify-payment-coach',CoachController.verifyPayment);
 
+// Health check endpoint
+Router.get('/health', (req, res) => {
+    res.status(200).send('OK');
+  });
+  
+
 
 module.exports=Router;
