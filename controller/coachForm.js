@@ -19,8 +19,8 @@ dotenv.config();
 
 // Initialize Razorpay instance using environment variables
 const razorpayInstance = new Razorpay({
-  key_id: process.env.key_id,
-  key_secret: process.env.key_secret,
+  key_id: process.env.RAZORPAY_KEY_ID,
+  key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
 // Configure Cloudinary
@@ -220,7 +220,7 @@ exports.verifyPayment = async (req, res) => {
 
     // Generate the expected signature
     const generatedSignature = crypto
-      .createHmac("sha256", process.env.key_secret) // Use Razorpay key_secret
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET) // Use Razorpay key_secret
       .update(razorpay_order_id + "|" + razorpay_payment_id) // Concatenate order_id and payment_id
       .digest("hex");
 
