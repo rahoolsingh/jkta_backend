@@ -8,11 +8,7 @@ const fs = require("fs");
 const Razorpay = require("razorpay");
 const path = require("path");
 const { generateCard, deleteFiles } = require("../controller/idcard");
-const {
-    sendMail,
-    sendWithAttachment,
-} = require("../controller/mailController");
-const { use } = require("../routes/user");
+const { sendWithAttachment } = require("../controller/mailController");
 
 dotenv.config();
 
@@ -182,7 +178,7 @@ exports.register = async (req, res, next) => {
 
         // Prepare Razorpay order options
         const orderOptions = {
-            amount: 30000, // amount in paise (69 * 100 = 6900 paise = ₹69)
+            amount: email === "info@jkta.in" ? 100 : 30000,
             currency: "INR",
             receipt: `order_rcptid_${newUser._id}`,
             payment_capture: 1, // Auto capture payment
