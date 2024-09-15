@@ -9,6 +9,7 @@ const Razorpay = require("razorpay");
 const path = require("path");
 const { generateCard, deleteFiles } = require("../controller/idcard");
 const { sendWithAttachment } = require("../controller/mailController");
+const expiryDate = require("../utils/expiryDate");
 
 dotenv.config();
 
@@ -185,7 +186,7 @@ exports.register = async (req, res, next) => {
 
         // Create Razorpay order
         const order = await razorpayInstance.orders.create(orderOptions);
-        console.log(order);
+        
 
         // Send order details to the client for further processing
         res.status(200).json({
@@ -232,7 +233,7 @@ exports.verifyPayment = async (req, res) => {
                 name: userData.playerName,
                 parentage: userData.fatherName,
                 gender: userData.gender,
-                valid: "ToDo",
+                valid: expiryDate(userData.createdAt),
                 district: userData.district,
                 dob: `${userData.dob}`,
             });

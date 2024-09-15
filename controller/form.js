@@ -9,6 +9,8 @@ const Razorpay = require("razorpay");
 const path = require("path");
 const { generateCard, deleteFiles } = require("../controller/idcard");
 const { sendWithAttachment } = require("../controller/mailController");
+const expiryDate = require("../utils/expiryDate");
+
 
 dotenv.config();
 
@@ -193,7 +195,6 @@ exports.register = async (req, res, next) => {
                     error: "An error occurred while creating the order.",
                 });
             });
-
         // Send order details to the client for further processing
         res.status(200).json({
             success: true,
@@ -239,7 +240,7 @@ exports.verifyPayment = async (req, res) => {
                 name: userData.athleteName,
                 parentage: userData.fatherName,
                 gender: userData.gender,
-                valid: "ToDo",
+                valid: expiryDate(userData.createdAt),
                 district: userData.district,
                 dob: `${userData.dob}`,
             });
