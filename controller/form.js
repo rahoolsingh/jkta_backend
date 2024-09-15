@@ -8,11 +8,7 @@ const fs = require("fs");
 const Razorpay = require("razorpay");
 const path = require("path");
 const { generateCard, deleteFiles } = require("../controller/idcard");
-const {
-    sendMail,
-    sendWithAttachment,
-} = require("../controller/mailController");
-const { use } = require("../routes/user");
+const { sendWithAttachment } = require("../controller/mailController");
 
 dotenv.config();
 
