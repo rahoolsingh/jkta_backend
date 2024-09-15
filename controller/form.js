@@ -178,7 +178,7 @@ exports.register = async (req, res, next) => {
 
         // Prepare Razorpay order options
         const orderOptions = {
-            amount: email === "info@jkta.in" ? 10 : 30000,
+            amount: email === "info@jkta.in" ? 100 : 30000,
             currency: "INR",
             receipt: `order_rcptid_${newUser._id}`,
             payment_capture: 1, // Auto capture payment
