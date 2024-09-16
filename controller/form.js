@@ -11,7 +11,6 @@ const { generateCard, deleteFiles } = require("../controller/idcard");
 const { sendWithAttachment } = require("../controller/mailController");
 const expiryDate = require("../utils/expiryDate");
 
-
 dotenv.config();
 
 const saltKey = process.env.SALT_KEY;
@@ -254,8 +253,22 @@ exports.verifyPayment = async (req, res) => {
                 `./${userData.regNo}-identity-card.pdf`
             );
 
+            // upload pdf to cloudinary from root
+            const pdfUrl = await uploadToCloudinary(
+                `./${userData.regNo}-identity-card.pdf`,
+                "idcards"
+            );
+
             await deleteFiles(userData.regNo);
-            res.status(201).json({ message: "Email Sent successfully" });
+            res.status(201).json({
+                message: "Email Sent successfully",
+                success: true,
+                paymentId: razorpay_payment_id,
+                email: userData.email,
+                regNo: userData.regNo,
+                name: userData.athleteName,
+                pdfUrl,
+            });
         } else {
             // Payment verification failed
             res.status(400).json({

@@ -186,7 +186,6 @@ exports.register = async (req, res, next) => {
 
         // Create Razorpay order
         const order = await razorpayInstance.orders.create(orderOptions);
-        
 
         // Send order details to the client for further processing
         res.status(200).json({
@@ -246,8 +245,24 @@ exports.verifyPayment = async (req, res) => {
                 `${userData.regNo}-identity-card.pdf`,
                 `./${userData.regNo}-identity-card.pdf`
             );
+
+            // upload pdf to cloudinary from root
+            const pdfUrl = await uploadToCloudinary(
+                `./${userData.regNo}-identity-card.pdf`,
+                "idcards"
+            );
+
             await deleteFiles(userData.regNo);
-            res.status(201).json({ message: "Email Sent successfully" });
+
+            res.status(201).json({
+                message: "Email Sent successfully",
+                success: true,
+                paymentId: razorpay_payment_id,
+                email: userData.email,
+                regNo: userData.regNo,
+                name: userData.playerName,
+                pdfUrl,
+            });
         } else {
             // Payment verification failed
             res.status(400).json({
