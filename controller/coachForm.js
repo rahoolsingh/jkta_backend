@@ -229,7 +229,8 @@ exports.verifyPayment = async (req, res) => {
 
       const coachEnrollmentCount = await CoachEnrollment.countDocuments(); // as it returns a promise
       const coachEnrollmentDetails = await CoachEnrollment.create({
-        enrollmentNumber: `JKTA${10000 + coachEnrollmentCount}`
+        enrollmentNumber: `JKTA${10000 + coachEnrollmentCount+1}`,
+        regNo:userData._id
       });
 
 
