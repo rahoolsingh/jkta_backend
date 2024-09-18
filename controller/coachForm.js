@@ -275,11 +275,4 @@ exports.verifyPayment = async (req, res) => {
         });
 
     }
-  } catch (error) {
-    console.error("Error in verifying payment:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error",
-    });
-  }
 };
