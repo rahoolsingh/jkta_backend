@@ -262,9 +262,9 @@ exports.verifyPayment = async (req, res) => {
 
             await sendWithAttachment(
               userData.email,
-              "Here is your ID card from JKTA",
-              "Please find your id card attatched below",
-              "<p>Please find your id card attatched below</p>",
+              `${AthleteEnrollmentDetails.enrollmentNumber} - Congratulations on your successful registration with JKTA`,
+              `Thank you for registering with JKTA. Your enrollment number is ${AthleteEnrollmentDetails.enrollmentNumber}. Please find your Athelete License attached below.`,
+              `<p>Thank you for registering with JKTA. Your enrollment number is ${AthleteEnrollmentDetails.enrollmentNumber}. Please find your Athelete License attached below.</p>`,
               `${userData.regNo}-identity-card.pdf`,
               `./${userData.regNo}-identity-card.pdf`
           );
