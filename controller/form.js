@@ -240,10 +240,11 @@ exports.verifyPayment = async (req, res) => {
                 enrollmentNumber: `JKTA${1000 + AthleteEnrollmentCount + 1}`,
                 regNo: userData._id,
             });
+            console.log(AthleteEnrollmentDetails);
 
             await generateCard({
                 id: userData.regNo,
-                enrollment: AthleteEnrollmentDetails.enrollmentNumber,
+                enrollmentNo: AthleteEnrollmentDetails.enrollmentNumber,
                 type: "A",
                 name: userData.athleteName,
                 parentage: userData.fatherName,
@@ -258,6 +259,15 @@ exports.verifyPayment = async (req, res) => {
                 `./${userData.regNo}-identity-card.pdf`,
                 "idcards"
             );
+
+            await sendWithAttachment(
+              userData.email,
+              "Here is your ID card from JKTA",
+              "Please find your id card attatched below",
+              "<p>Please find your id card attatched below</p>",
+              `${userData.regNo}-identity-card.pdf`,
+              `./${userData.regNo}-identity-card.pdf`
+          );
 
             await deleteFiles(userData.regNo);
             res.status(201).json({
