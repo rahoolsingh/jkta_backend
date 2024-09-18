@@ -12,7 +12,6 @@ const { sendWithAttachment } = require("../controller/mailController");
 const expiryDate = require("../utils/expiryDate");
 const AtheleteEnrollment=require("../model/athleteEnrollment");
 
-
 dotenv.config();
 
 const saltKey = process.env.SALT_KEY;
@@ -252,23 +251,36 @@ exports.verifyPayment = async (req, res) => {
         dob: `${userData.dob}`,
       });
 
-      await sendWithAttachment(
-        userData.email,
-        "Here is your ID card from JKTA",
-        "Please find your id card attatched below",
-        "<p>Please find your id card attatched below</p>",
-        `${userData.regNo}-identity-card.pdf`,
-        `./${userData.regNo}-identity-card.pdf`
-      );
+            // upload pdf to cloudinary from root
+            const pdfUrl = await uploadToCloudinary(
+                `./${userData.regNo}-identity-card.pdf`,
+                "idcards"
+            );
 
-      await deleteFiles(userData.regNo);
-      res.status(201).json({ message: "Email Sent successfully" });
-    } else {
-      // Payment verification failed
-      res.status(400).json({
-        success: false,
-        message: "Payment verification failed",
-      });
+            await deleteFiles(userData.regNo);
+            res.status(201).json({
+                message: "Email Sent successfully",
+                success: true,
+                paymentId: razorpay_payment_id,
+                email: userData.email,
+                regNo: userData.regNo,
+                name: userData.athleteName,
+                pdfUrl,
+            });
+        } else {
+            // Payment verification failed
+            res.status(400).json({
+                success: false,
+                message: "Payment verification failed",
+            });
+        }
+    } catch (error) {
+        console.error("Error in verifying payment:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+        });
+
     }
   } catch (error) {
     console.error("Error in verifying payment:", error);
