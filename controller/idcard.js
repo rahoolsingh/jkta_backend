@@ -79,6 +79,7 @@ const makeAvatar = (id) => {
 
 const generateCard = async ({
     id,
+    enrollmentNo,
     type,
     name,
     parentage,
@@ -120,7 +121,7 @@ const generateCard = async ({
     doc.fontSize(22)
         .font("Helvetica-Bold")
         .fillColor("red")
-        .text(id.toUpperCase(), 243, 136);
+        .text(enrollmentNo.toUpperCase(), 243, 136);
 
     doc.fontSize(30)
         .font("Times-Bold")

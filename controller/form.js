@@ -242,7 +242,8 @@ exports.verifyPayment = async (req, res) => {
             });
 
             await generateCard({
-                id: AthleteEnrollmentDetails,
+                id: userData.regNo,
+                enrollment: AthleteEnrollmentDetails.enrollmentNumber,
                 type: "A",
                 name: userData.athleteName,
                 parentage: userData.fatherName,
