@@ -113,8 +113,8 @@ exports.register = async (req, res, next) => {
         const regNo = `CH${Date.now().toString()}`;
         // Upload photo to Cloudinary
         if (files.photo) {
-            const fileName = `${regNo}-download.png`;
-            await saveFileToRoot(files.photo[0].path, fileName);
+            // const fileName = `${regNo}-download.png`;
+            // await saveFileToRoot(files.photo[0].path, fileName);
 
             photoUrl = await uploadToCloudinary(files.photo[0].path, "uploads");
             fs.unlinkSync(files.photo[0].path); // Remove file after upload
@@ -225,51 +225,52 @@ exports.verifyPayment = async (req, res) => {
 
             const userData = await Coach.findById(userId);
 
-            await Coach.findByIdAndUpdate(userData._id, { payment: true });
-
-            const coachEnrollmentCount = await CoachEnrollment.countDocuments(); // as it returns a promise
-            const coachEnrollmentDetails = await CoachEnrollment.create({
-                enrollmentNumber: `JKTA${10000 + coachEnrollmentCount + 1}`,
-                regNo: userData._id,
+            await Coach.findByIdAndUpdate(userData._id, {
+                payment: true,
+                status: "pending",
             });
 
-            await generateCard({
-                id: userData.regNo,
-                enrollmentNo: coachEnrollmentDetails.enrollmentNumber,
-                type: "C",
-                name: userData.playerName,
-                parentage: userData.fatherName,
-                gender: userData.gender,
-                valid: expiryDate(userData.createdAt),
-                district: userData.district,
-                dob: `${userData.dob}`,
-            });
+            // const coachEnrollmentCount = await CoachEnrollment.countDocuments(); // as it returns a promise
+            // const coachEnrollmentDetails = await CoachEnrollment.create({
+            //     enrollmentNumber: `JKTA${10000 + coachEnrollmentCount + 1}`,
+            //     regNo: userData._id,
+            // });
+
+            // await generateCard({
+            //     id: userData.regNo,
+            //     enrollmentNo: coachEnrollmentDetails.enrollmentNumber,
+            //     type: "C",
+            //     name: userData.playerName,
+            //     parentage: userData.fatherName,
+            //     gender: userData.gender,
+            //     valid: expiryDate(userData.createdAt),
+            //     district: userData.district,
+            //     dob: `${userData.dob}`,
+            // });
 
             await sendWithAttachment(
                 userData.email,
-                `${coachEnrollmentDetails.enrollmentNumber} - Congratulations on your successful registration with JKTA`,
-                `Thank you for registering with JKTA. Your enrollment number is ${coachEnrollmentDetails.enrollmentNumber}. Please find your coach license attatched below`,
-                `<p>Thank you for registering with JKTA. Your enrollment number is ${coachEnrollmentDetails.enrollmentNumber}. Please find your coach license attatched below</p>`,
-                `${userData.regNo}-identity-card.pdf`,
-                `./${userData.regNo}-identity-card.pdf`
+                `Payment Confirmation - Tracking Number: ${userData.regNo}`,
+                `Dear ${userData.playerName},\n\nWe are pleased to inform you that your payment has been successfully received. Below are the details of your transaction:\n\nTracking Number: ${userData.regNo}\nPayment ID: ${razorpay_payment_id}\n\nOur team will verify your details shortly. If you have any questions or need further assistance, please do not hesitate to contact us.\n\nThank you for your trust in JKTA.\n\nBest regards,\nJKTA Team`,
+                `<h3>Dear ${userData.playerName},</h3><p>We are pleased to inform you that your payment has been successfully received. Below are the details of your transaction:</p><ul><li><strong>Tracking Number:</strong> ${userData.regNo}</li><li><strong>Payment ID:</strong> ${razorpay_payment_id}</li></ul><p>Our team will verify your details shortly. If you have any questions or need further assistance, please do not hesitate to contact us.</p><p>Thank you for your trust in JKTA.</p><p>Best regards,<br>JKTA Team</p>`
             );
 
-            // upload pdf to cloudinary from root
-            const pdfUrl = await uploadToCloudinary(
-                `./${userData.regNo}-identity-card.pdf`,
-                "idcards"
-            );
+            // // upload pdf to cloudinary from root
+            // const pdfUrl = await uploadToCloudinary(
+            //     `./${userData.regNo}-identity-card.pdf`,
+            //     "idcards"
+            // );
 
-            await deleteFiles(userData.regNo);
+            // await deleteFiles(userData.regNo);
 
             res.status(201).json({
-                message: "Email Sent successfully",
+                message: "Payment Done. Admin will verify your details soon.",
                 success: true,
                 paymentId: razorpay_payment_id,
                 email: userData.email,
                 regNo: userData.regNo,
                 name: userData.playerName,
-                pdfUrl,
+                // pdfUrl,
             });
         } else {
             // Payment verification failed

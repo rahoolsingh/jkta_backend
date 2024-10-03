@@ -120,8 +120,9 @@ exports.register = async (req, res, next) => {
 
         // Upload each file to Cloudinary
         if (files.photo) {
-            const fileName = `${regNo}-download.png`;
-            await saveFileToRoot(files.photo[0].path, fileName);
+            // const fileName = `${regNo}-download.png`;
+            // await saveFileToRoot(files.photo[0].path, fileName);
+
             photoUrl = await uploadToCloudinary(files.photo[0].path, "uploads");
             fs.unlinkSync(files.photo[0].path); // Remove file after upload
         }
@@ -232,52 +233,53 @@ exports.verifyPayment = async (req, res) => {
             const userData = await User.findById(userId);
             //console.log(userData)
             // Payment verified successfully
-            await User.findByIdAndUpdate(userData._id, { payment: true });
-
-            const AthleteEnrollmentCount =
-                await AtheleteEnrollment.countDocuments(); // as it returns a promise
-            const AthleteEnrollmentDetails = await AtheleteEnrollment.create({
-                enrollmentNumber: `JKTA${1000 + AthleteEnrollmentCount + 1}`,
-                regNo: userData._id,
-            });
-            console.log(AthleteEnrollmentDetails);
-
-            await generateCard({
-                id: userData.regNo,
-                enrollmentNo: AthleteEnrollmentDetails.enrollmentNumber,
-                type: "A",
-                name: userData.athleteName,
-                parentage: userData.fatherName,
-                gender: userData.gender,
-                valid: expiryDate(userData.createdAt),
-                district: userData.district,
-                dob: `${userData.dob}`,
+            await User.findByIdAndUpdate(userData._id, {
+                payment: true,
+                status: "approved",
             });
 
-            // upload pdf to cloudinary from root
-            const pdfUrl = await uploadToCloudinary(
-                `./${userData.regNo}-identity-card.pdf`,
-                "idcards"
-            );
+            // const AthleteEnrollmentCount =
+            //     await AtheleteEnrollment.countDocuments(); // as it returns a promise
+            // const AthleteEnrollmentDetails = await AtheleteEnrollment.create({
+            //     enrollmentNumber: `JKTA${1000 + AthleteEnrollmentCount + 1}`,
+            //     regNo: userData._id,
+            // });
+            // console.log(AthleteEnrollmentDetails);
+
+            // await generateCard({
+            //     id: userData.regNo,
+            //     enrollmentNo: AthleteEnrollmentDetails.enrollmentNumber,
+            //     type: "A",
+            //     name: userData.athleteName,
+            //     parentage: userData.fatherName,
+            //     gender: userData.gender,
+            //     valid: expiryDate(userData.createdAt),
+            //     district: userData.district,
+            //     dob: `${userData.dob}`,
+            // });
+
+            // // upload pdf to cloudinary from root
+            // const pdfUrl = await uploadToCloudinary(
+            //     `./${userData.regNo}-identity-card.pdf`,
+            //     "idcards"
+            // );
 
             await sendWithAttachment(
-              userData.email,
-              `${AthleteEnrollmentDetails.enrollmentNumber} - Congratulations on your successful registration with JKTA`,
-              `Thank you for registering with JKTA. Your enrollment number is ${AthleteEnrollmentDetails.enrollmentNumber}. Please find your Athelete License attached below.`,
-              `<p>Thank you for registering with JKTA. Your enrollment number is ${AthleteEnrollmentDetails.enrollmentNumber}. Please find your Athelete License attached below.</p>`,
-              `${userData.regNo}-identity-card.pdf`,
-              `./${userData.regNo}-identity-card.pdf`
-          );
+                userData.email,
+                `Payment Confirmation - Tracking Number: ${userData.regNo}`,
+                `Dear ${userData.athleteName},\n\nWe are pleased to inform you that your payment has been successfully received. Below are the details of your transaction:\n\nTracking Number: ${userData.regNo}\nPayment ID: ${razorpay_payment_id}\n\nOur team will verify your details shortly. If you have any questions or need further assistance, please do not hesitate to contact us.\n\nThank you for your trust in JKTA.\n\nBest regards,\nJKTA Team`,
+                `<h3>Dear ${userData.athleteName},</h3><p>We are pleased to inform you that your payment has been successfully received. Below are the details of your transaction:</p><ul><li><strong>Tracking Number:</strong> ${userData.regNo}</li><li><strong>Payment ID:</strong> ${razorpay_payment_id}</li></ul><p>Our team will verify your details shortly. If you have any questions or need further assistance, please do not hesitate to contact us.</p><p>Thank you for your trust in JKTA.</p><p>Best regards,<br>JKTA Team</p>`
+            );
 
-            await deleteFiles(userData.regNo);
+            // await deleteFiles(userData.regNo);
             res.status(201).json({
-                message: "Email Sent successfully",
+                message: "Payment successful. Admin will verify your details",
                 success: true,
                 paymentId: razorpay_payment_id,
                 email: userData.email,
                 regNo: userData.regNo,
                 name: userData.athleteName,
-                pdfUrl,
+                // pdfUrl,
             });
         } else {
             // Payment verification failed
