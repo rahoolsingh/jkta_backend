@@ -94,6 +94,8 @@ exports.register = async (req, res, next) => {
         const {
             playerName,
             fatherName,
+            motherName,
+            academyName,
             dob,
             gender,
             district,
@@ -162,6 +164,8 @@ exports.register = async (req, res, next) => {
             regNo,
             playerName,
             fatherName,
+            motherName,
+            academyName,
             dob,
             gender,
             district,

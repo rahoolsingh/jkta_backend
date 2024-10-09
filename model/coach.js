@@ -7,6 +7,7 @@ const coachSchema = new Schema(
         playerName: String,
         fatherName: String,
         motherName: String,
+        academyName: String,
         dob: String,
         gender: String,
         district: String,
